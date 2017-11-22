@@ -1,28 +1,73 @@
+import { TestBed } from '@angular/core/testing';
+import {
+  Http,
+  Response,
+  ResponseOptions,
+  XHRBackend,
+  HttpModule
+} from '@angular/http';
+import {
+  MockBackend,
+  MockConnection
+} from '@angular/http/testing';
 import {
   discardPeriodicTasks,
   fakeAsync,
   tick
 } from '@angular/core/testing';
-
 import { DeploymentsService } from './deployments.service';
 
 describe('DeploymentsService', () => {
 
+  let mockBackend: MockBackend;
   let svc: DeploymentsService;
 
   beforeEach(() => {
-    svc = new DeploymentsService();
+    TestBed.configureTestingModule({
+      imports: [HttpModule],
+      providers: [
+        {
+          provide: XHRBackend, useClass: MockBackend
+        },
+        DeploymentsService
+      ]
+    });
+    svc = TestBed.get(DeploymentsService);
+    mockBackend = TestBed.get(XHRBackend);
   });
 
   describe('#getApplications', () => {
-    it('should publish faked application IDs', fakeAsync(() => {
-      svc.getApplications('foo')
-        .subscribe(val => {
-          expect(val).toEqual(['vertx-hello', 'vertx-paint', 'vertx-wiki']);
-        });
-      tick(DeploymentsService.POLL_RATE_MS + 10);
-      discardPeriodicTasks();
-    }));
+    it('should publish faked application names', () => {
+      // given
+      const expectedResponse = {
+        data: {
+          applications: [
+            {
+              name: 'vertx-hello'
+            },
+            {
+              name: 'vertx-paint'
+            },
+            {
+              name: 'vertx-wiki'
+            }
+          ]
+        }
+      };
+      mockBackend.connections.subscribe((connection: MockConnection) => {
+        connection.mockRespond(new Response(
+          new ResponseOptions({
+            body: JSON.stringify(expectedResponse),
+            status: 200
+          })
+        ));
+      });
+      // when
+      svc.getApplications('foo-spaceId').subscribe((data: string[]) => {
+        // then
+        expect(data).toEqual(['vertx-hello', 'vertx-paint', 'vertx-wiki']);
+      });
+    });
   });
 
   describe('#getEnvironments', () => {

@@ -23,6 +23,7 @@ describe('DeploymentCardComponent', () => {
 
   beforeEach(() => {
     mockSvc = {
+      http: null,
       getApplications: () => { throw 'Not Implemented'; },
       getEnvironments: () => { throw 'Not Implemented'; },
       getPodCount: () => Observable.of(2),
