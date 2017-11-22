@@ -50,6 +50,7 @@ describe('AppsComponent', () => {
 
   beforeEach(() => {
     mockSvc = {
+      http: null,
       getApplications: () => Observable.of(['foo-app', 'bar-app']),
       getEnvironments: () => Observable.of([
         { environmentId: 'a1', name: 'stage' },
