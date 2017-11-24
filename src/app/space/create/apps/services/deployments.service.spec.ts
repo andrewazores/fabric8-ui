@@ -1,4 +1,3 @@
-import { TestBed } from '@angular/core/testing';
 import {
   Http,
   Response,
@@ -13,8 +12,10 @@ import {
 import {
   discardPeriodicTasks,
   fakeAsync,
-  tick
+  tick,
+  TestBed
 } from '@angular/core/testing';
+import { WIT_API_URL } from 'ngx-fabric8-wit';
 import { DeploymentsService } from './deployments.service';
 
 describe('DeploymentsService', () => {
@@ -26,9 +27,8 @@ describe('DeploymentsService', () => {
     TestBed.configureTestingModule({
       imports: [HttpModule],
       providers: [
-        {
-          provide: XHRBackend, useClass: MockBackend
-        },
+        { provide: XHRBackend, useClass: MockBackend },
+        { provide: WIT_API_URL, useValue: 'http://example.com:1234/api/' },
         DeploymentsService
       ]
     });

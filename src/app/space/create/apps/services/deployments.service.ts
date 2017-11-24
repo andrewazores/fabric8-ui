@@ -1,9 +1,11 @@
 import {
+  Inject,
   Injectable,
   InjectionToken
 } from '@angular/core';
 import { Http } from '@angular/http';
 import { Observable } from 'rxjs';
+import { WIT_API_URL } from 'ngx-fabric8-wit';
 import { Environment } from '../models/environment';
 import { CpuStat } from '../models/cpu-stat';
 import { MemoryStat } from '../models/memory-stat';
@@ -66,12 +68,13 @@ export class DeploymentsService implements IDeploymentsService {
   static readonly POLL_RATE_MS: number = 5000;
 
   constructor(
-    public http: Http
+    public http: Http,
+    @Inject(WIT_API_URL) public apiUrl: string
   ) { }
 
   getApplications(spaceId: string): Observable<string[]> {
     return this.http
-      .get(`http://localhost:8080/api/apps/spaces/${spaceId}`)
+      .get(this.apiUrl + `apps/spaces/${spaceId}`)
       .map(response => response.json() as ApiResponse)
       .concatMap(resp => resp.data.applications)
       .map(app => app.name)
