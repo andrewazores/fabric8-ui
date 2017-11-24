@@ -71,7 +71,7 @@ export class DeploymentsService implements IDeploymentsService {
 
   getApplications(spaceId: string): Observable<string[]> {
     return this.http
-      .get('http://localhost:8080/api/apps/spaces/23630802-c4b2-11e7-82a2-507b9dac9ad3')
+      .get(`http://localhost:8080/api/apps/spaces/${spaceId}`)
       .map(response => response.json() as ApiResponse)
       .concatMap(resp => resp.data.applications)
       .map(app => app.name)
