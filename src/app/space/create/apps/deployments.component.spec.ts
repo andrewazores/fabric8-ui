@@ -45,23 +45,16 @@ describe('AppsComponent', () => {
 
   let component: DeploymentsComponent;
   let fixture: ComponentFixture<DeploymentsComponent>;
-  let mockSvc: DeploymentsService;
+  let mockSvc: any;
   let spaces: Spaces;
 
   beforeEach(() => {
     mockSvc = {
-      http: null,
-      headers: null,
-      logger: null,
-      auth: null,
-      appsUrl: 'http://mock-url.com',
       getApplications: () => Observable.of(['foo-app', 'bar-app']),
       getEnvironments: () => Observable.of([
         { environmentId: 'a1', name: 'stage' },
         { environmentId: 'b2', name: 'prod' }
       ]),
-      getPodCount: () => { throw 'Not Implemented'; },
-      getVersion: () => { throw 'NotImplemented'; },
       getCpuStat: (spaceId: string, envId: string) => Observable.of({ used: 1, total: 2 } as CpuStat),
       getMemoryStat: (spaceId: string, envId: string) => Observable.of({ used: 1, total: 2 } as MemoryStat)
     };
@@ -72,7 +65,6 @@ describe('AppsComponent', () => {
 
     spyOn(mockSvc, 'getApplications').and.callThrough();
     spyOn(mockSvc, 'getEnvironments').and.callThrough();
-    spyOn(mockSvc, 'getPodCount').and.callThrough();
     spyOn(mockSvc, 'getCpuStat').and.callThrough();
     spyOn(mockSvc, 'getMemoryStat').and.callThrough();
 

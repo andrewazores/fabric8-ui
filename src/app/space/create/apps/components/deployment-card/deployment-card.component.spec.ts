@@ -19,25 +19,16 @@ describe('DeploymentCardComponent', () => {
 
   let component: DeploymentCardComponent;
   let fixture: ComponentFixture<DeploymentCardComponent>;
-  let mockSvc: DeploymentsService;
+  let mockSvc: any;
 
   beforeEach(() => {
     mockSvc = {
-      http: null,
-      headers: null,
-      logger: null,
-      auth: null,
-      appsUrl: 'http://mock-url.com',
-      getApplications: () => { throw 'Not Implemented'; },
-      getEnvironments: () => { throw 'Not Implemented'; },
       getPodCount: () => Observable.of(2),
       getVersion: () => Observable.of('1.2.3'),
       getCpuStat: (spaceId: string, envId: string) => Observable.of({ used: 1, total: 2 } as CpuStat),
       getMemoryStat: (spaceId: string, envId: string) => Observable.of({ used: 1, total: 2 } as MemoryStat)
     };
 
-    spyOn(mockSvc, 'getApplications').and.callThrough();
-    spyOn(mockSvc, 'getEnvironments').and.callThrough();
     spyOn(mockSvc, 'getPodCount').and.callThrough();
     spyOn(mockSvc, 'getCpuStat').and.callThrough();
     spyOn(mockSvc, 'getMemoryStat').and.callThrough();
