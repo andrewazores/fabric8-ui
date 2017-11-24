@@ -82,15 +82,17 @@ export class DeploymentsService implements IDeploymentsService {
     if (this.auth.getToken() != null) {
       this.headers.set('Authorization', 'Bearer ' + this.auth.getToken());
     }
-    this.appsUrl = apiUrl + 'apps/spaces/23630802-c4b2-11e7-82a2-507b9dac9ad3';
+    this.appsUrl = apiUrl + 'apps/spaces/';
   }
 
   getApplications(spaceId: string): Observable<string[]> {
-    return this.http
-      .get(this.appsUrl, { headers : this.headers })
-      .map(response => response.json() as ApplicationsResponse)
-      .concatMap(resp => resp.data.applications)
-      .map(app => app.name)
+    return this.getApplicationsResponse(spaceId)
+      .concatMap(resp => {
+        return resp.data.applications;
+      })
+      .map(app => {
+        return app.name;
+      })
       .toArray();
   }
 
@@ -126,5 +128,18 @@ export class DeploymentsService implements IDeploymentsService {
       .distinctUntilChanged()
       .map(() => ({ used: Math.floor(Math.random() * 156) + 100, total: 256 } as MemoryStat))
       .startWith({ used: 200, total: 256 } as MemoryStat);
+  }
+
+  private getApplicationsResponse(spaceId: string): Observable<ApplicationsResponse> {
+    // return Observable
+    //   .interval(DeploymentsService.POLL_RATE_MS)
+    //   .concatMap(() => this.http.get(this.appsUrl + spaceId, { headers: this.headers }))
+    //   .map(response => {
+    //     return response.json() as ApplicationsResponse;
+    //   });
+    return this.http.get(this.appsUrl + spaceId, { headers: this.headers })
+      .map(response => {
+        return response.json() as ApplicationsResponse;
+      });
   }
 }
