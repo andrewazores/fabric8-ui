@@ -15,19 +15,44 @@ import {
   fakeAsync,
   tick
 } from '@angular/core/testing';
+
+
+import { Logger } from 'ngx-base';
+import { AuthenticationService, UserService } from 'ngx-login-client';
+import { WIT_API_URL } from 'ngx-fabric8-wit';
 import { DeploymentsService } from './deployments.service';
 
 describe('DeploymentsService', () => {
-
+  let mockLog: any;
   let mockBackend: MockBackend;
+  let mockAuthService: any;
+  let mockUserService:  any;
   let svc: DeploymentsService;
 
   beforeEach(() => {
+    mockLog = jasmine.createSpyObj('Logger', ['error']);
+    mockAuthService = jasmine.createSpyObj('AuthenticationService', ['getToken']);
+    mockUserService = jasmine.createSpy('UserService');
     TestBed.configureTestingModule({
       imports: [HttpModule],
       providers: [
         {
+          provide: Logger, useValue: mockLog
+        },
+        {
           provide: XHRBackend, useClass: MockBackend
+        },
+        {
+          provide: AuthenticationService,
+          useValue: mockAuthService
+        },
+        {
+          provide: UserService,
+          useValue: mockUserService
+        },
+        {
+          provide: WIT_API_URL,
+          useValue: 'http://example.com'
         },
         DeploymentsService
       ]

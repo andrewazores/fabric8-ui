@@ -1,9 +1,14 @@
 import {
+  Inject,
   Injectable,
   InjectionToken
 } from '@angular/core';
-import { Http } from '@angular/http';
+import { Headers, Http } from '@angular/http';
+import { AuthenticationService } from 'ngx-login-client';
+import { Logger } from 'ngx-base';
 import { Observable } from 'rxjs';
+import { WIT_API_URL } from 'ngx-fabric8-wit';
+
 import { Environment } from '../models/environment';
 import { CpuStat } from '../models/cpu-stat';
 import { MemoryStat } from '../models/memory-stat';
@@ -19,7 +24,7 @@ export declare interface IDeploymentsService {
   getMemoryStat(spaceId: string, environmentId: string): Observable<MemoryStat>;
 }
 
-export declare interface ApiResponse {
+export declare interface ApplicationsResponse {
   data: Applications;
 }
 
@@ -65,14 +70,25 @@ export declare interface Pods {
 export class DeploymentsService implements IDeploymentsService {
   static readonly POLL_RATE_MS: number = 5000;
 
+  public headers = new Headers({ 'Content-Type': 'application/json' });
+  public appsUrl: string;
+
   constructor(
-    public http: Http
-  ) { }
+    public http: Http,
+    public logger: Logger,
+    public auth: AuthenticationService,
+    @Inject(WIT_API_URL) apiUrl: string
+  ) {
+    if (this.auth.getToken() != null) {
+      this.headers.set('Authorization', 'Bearer ' + this.auth.getToken());
+    }
+    this.appsUrl = apiUrl + 'apps/spaces/23630802-c4b2-11e7-82a2-507b9dac9ad3';
+  }
 
   getApplications(spaceId: string): Observable<string[]> {
     return this.http
-      .get('http://localhost:8080/api/apps/spaces/23630802-c4b2-11e7-82a2-507b9dac9ad3')
-      .map(response => response.json() as ApiResponse)
+      .get(this.appsUrl, { headers : this.headers })
+      .map(response => response.json() as ApplicationsResponse)
       .concatMap(resp => resp.data.applications)
       .map(app => app.name)
       .toArray();
