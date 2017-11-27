@@ -87,13 +87,9 @@ export class DeploymentsService implements IDeploymentsService {
 
   getApplications(spaceId: string): Observable<string[]> {
     return this.getApplicationsResponse(spaceId)
-      .concatMap(resp => {
-        return resp.data.applications;
-      })
-      .map(app => {
-        return app.name;
-      })
-      .toArray();
+      .map(resp => {
+        return resp.data.applications.map(application => application.name);
+      });
   }
 
   getEnvironments(spaceId: string): Observable<Environment[]> {
@@ -131,13 +127,9 @@ export class DeploymentsService implements IDeploymentsService {
   }
 
   private getApplicationsResponse(spaceId: string): Observable<ApplicationsResponse> {
-    // return Observable
-    //   .interval(DeploymentsService.POLL_RATE_MS)
-    //   .concatMap(() => this.http.get(this.appsUrl + spaceId, { headers: this.headers }))
-    //   .map(response => {
-    //     return response.json() as ApplicationsResponse;
-    //   });
-    return this.http.get(this.appsUrl + spaceId, { headers: this.headers })
+    return Observable
+      .timer(0, DeploymentsService.POLL_RATE_MS)
+      .concatMap(() => this.http.get(this.appsUrl + spaceId, { headers: this.headers }))
       .map(response => {
         return response.json() as ApplicationsResponse;
       });
