@@ -11,11 +11,22 @@ import {
   MockConnection
 } from '@angular/http/testing';
 import {
+  Http,
+  Response,
+  ResponseOptions,
+  XHRBackend,
+  HttpModule
+} from '@angular/http';
+import {
+  MockBackend,
+  MockConnection
+} from '@angular/http/testing';
+import {
   discardPeriodicTasks,
   fakeAsync,
-  tick
+  tick,
+  TestBed
 } from '@angular/core/testing';
-
 
 import { Logger } from 'ngx-base';
 import { AuthenticationService, UserService } from 'ngx-login-client';
