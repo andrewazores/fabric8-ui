@@ -205,6 +205,7 @@ export class DeploymentsService implements OnDestroy {
   static readonly FRONT_LOAD_WINDOW_WIDTH: number = DeploymentsService.FRONT_LOAD_SAMPLES * DeploymentsService.POLL_RATE_MS;
 
   private readonly updater: Observable<void>;
+  private readonly statsUpdater: Subject<void>;
   private readonly hotUpdater: Subject<void>;
 
   private readonly headers: Headers = new Headers({ 'Content-Type': 'application/json' });
@@ -230,6 +231,7 @@ export class DeploymentsService implements OnDestroy {
       this.headers.set('Authorization', `Bearer ${this.auth.getToken()}`);
     }
     this.apiUrl = witUrl + 'deployments/spaces/';
+    this.statsUpdater = new Subject<void>();
     this.hotUpdater = new Subject<void>();
     this.updater = Observable.merge(
       pollTimer,
@@ -336,8 +338,12 @@ export class DeploymentsService implements OnDestroy {
                     pods.pods.find(p => p[0] === 'Running')[1] === desiredReplicas
                   )
               )
+          )
+            .subscribe(
+              () => this.hotUpdater.next(),
+              () => undefined,
+              () => this.statsUpdater.next()
             )
-            .subscribe(() => this.hotUpdater.next())
         );
       });
   }
@@ -570,13 +576,15 @@ export class DeploymentsService implements OnDestroy {
           return Observable.never();
         }
         const url = `${this.apiUrl}${spaceId}/applications/${applicationId}/deployments/${environmentName}/stats`;
-        return this.pollTimer
-          .concatMap(() =>
-            this.http.get(url, { headers: this.headers })
-              .map((response: Response) => (response.json() as TimeseriesResponse).data.attributes)
-              .catch((err: Response) => this.handleHttpError(err))
-              .filter((t: TimeseriesData) => !!t && !isEmpty(t))
-          );
+        return Observable.merge(
+          this.pollTimer,
+          this.statsUpdater
+        ).concatMap(() =>
+          this.http.get(url, { headers: this.headers })
+            .map((response: Response) => (response.json() as TimeseriesResponse).data.attributes)
+            .catch((err: Response) => this.handleHttpError(err))
+            .filter((t: TimeseriesData) => !!t && !isEmpty(t))
+        );
       });
   }
 
