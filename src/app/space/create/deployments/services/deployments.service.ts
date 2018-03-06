@@ -198,9 +198,14 @@ export class DeploymentsService implements OnDestroy {
 
   static readonly INITIAL_UPDATE_DELAY: number = 0;
   static readonly POLL_RATE_MS: number = 60000;
+  static readonly HOT_POLL_RATE_MS: number = 1000;
+  static readonly HOT_POLL_PERIOD_MS: number = 30000;
 
   static readonly FRONT_LOAD_SAMPLES: number = 15;
   static readonly FRONT_LOAD_WINDOW_WIDTH: number = DeploymentsService.FRONT_LOAD_SAMPLES * DeploymentsService.POLL_RATE_MS;
+
+  private readonly updater: Observable<void>;
+  private readonly hotUpdater: Subject<void>;
 
   private readonly headers: Headers = new Headers({ 'Content-Type': 'application/json' });
   private readonly apiUrl: string;
@@ -225,6 +230,11 @@ export class DeploymentsService implements OnDestroy {
       this.headers.set('Authorization', `Bearer ${this.auth.getToken()}`);
     }
     this.apiUrl = witUrl + 'deployments/spaces/';
+    this.hotUpdater = new Subject<void>();
+    this.updater = Observable.merge(
+      pollTimer,
+      this.hotUpdater.debounceTime(DeploymentsService.HOT_POLL_RATE_MS)
+    );
   }
 
   ngOnDestroy(): void {
@@ -304,10 +314,32 @@ export class DeploymentsService implements OnDestroy {
     applicationId: string,
     desiredReplicas: number
   ): Observable<string> {
+    const errSubject: Subject<string> = new Subject<string>();
     const url = `${this.apiUrl}${spaceId}/applications/${applicationId}/deployments/${environmentName}?podCount=${desiredReplicas}`;
     return this.http.put(url, '', { headers: this.headers })
       .map((r: Response) => `Successfully scaled ${applicationId}`)
-      .catch(err => Observable.throw(`Failed to scale ${applicationId}`));
+      .catch((err: any): Observable<string> => {
+        errSubject.next(err);
+        return Observable.throw(`Failed to scale ${applicationId}`);
+      })
+      .finally(() => {
+        this.serviceSubscriptions.push(
+          Observable
+            .interval(DeploymentsService.HOT_POLL_RATE_MS)
+            .takeUntil(
+              Observable.merge(
+                errSubject,
+                Observable.timer(DeploymentsService.HOT_POLL_PERIOD_MS),
+                this.getPods(spaceId, applicationId, environmentName)
+                  .first((pods: ModelPods): boolean =>
+                    pods.total === desiredReplicas &&
+                    pods.pods.find(p => p[0] === 'Running')[1] === desiredReplicas
+                  )
+              )
+            )
+            .subscribe(() => this.hotUpdater.next())
+        );
+      });
   }
 
   getPods(spaceId: string, applicationId: string, environmentName: string): Observable<ModelPods> {
@@ -412,7 +444,7 @@ export class DeploymentsService implements OnDestroy {
   private getApplicationsResponse(spaceId: string): Observable<Application[]> {
     if (!this.appsObservables.has(spaceId)) {
       const subject = new ReplaySubject<Application[]>(1);
-      const observable = this.pollTimer
+      const observable = this.updater
         .concatMap(() =>
           this.http.get(this.apiUrl + spaceId, { headers: this.headers })
             .map((response: Response) => (response.json() as ApplicationsResponse).data.attributes.applications)
@@ -441,7 +473,7 @@ export class DeploymentsService implements OnDestroy {
   private getEnvironmentsResponse(spaceId: string): Observable<EnvironmentStat[]> {
     if (!this.envsObservables.has(spaceId)) {
       const subject = new ReplaySubject<EnvironmentStat[]>(1);
-      const observable = this.pollTimer
+      const observable = this.updater
         .concatMap(() =>
           this.http.get(this.apiUrl + spaceId + '/environments', { headers: this.headers })
             .map((response: Response) => (response.json() as EnvironmentsResponse).data)
