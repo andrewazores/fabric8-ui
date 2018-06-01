@@ -1,6 +1,7 @@
 import {
   Component,
-  Input
+  Input,
+  OnInit
 } from '@angular/core';
 
 import { ChartAPI } from 'c3';
@@ -44,6 +45,7 @@ import {
 } from '../services/deployment-status.service';
 import { DeploymentsService } from '../services/deployments.service';
 
+import { AbstractDeploymentsComponent } from '../abstract-deployments.component';
 import { DeploymentsLinechartConfig } from '../deployments-linechart/deployments-linechart-config';
 import { DeploymentsLinechartData } from '../deployments-linechart/deployments-linechart-data';
 
@@ -64,7 +66,7 @@ enum LabelClass {
   templateUrl: 'deployment-details.component.html',
   styleUrls: ['./deployment-details.component.less']
 })
-export class DeploymentDetailsComponent {
+export class DeploymentDetailsComponent extends AbstractDeploymentsComponent implements OnInit {
 
   @Input() active: boolean;
   @Input() collapsed: boolean;
@@ -73,8 +75,6 @@ export class DeploymentDetailsComponent {
   @Input() spaceId: string;
 
   usageMessage: string = '';
-
-  private readonly subscriptions: Array<Subscription> = [];
 
   cpuData: SparklineData = {
     dataAvailable: true,
@@ -153,16 +153,18 @@ export class DeploymentDetailsComponent {
     private deploymentsService: DeploymentsService,
     private deploymentStatusService: DeploymentStatusService,
     private chartDefaults: ChartDefaults
-  ) { }
+  ) {
+    super();
+  }
 
   ngOnInit(): void {
-    this.subscriptions.push(
+    this.addSubscription(
       this.deploymentsService.getPods(this.spaceId, this.environment, this.applicationId)
         .map((p: Pods) => p.total > 0)
         .subscribe(this.hasPods)
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.hasPods.subscribe((hasPods: boolean): void => {
         if (!hasPods) {
           this.cpuChart.next(DeploymentDetailsComponent.NO_CHART);
@@ -172,7 +174,7 @@ export class DeploymentDetailsComponent {
       })
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.deploymentStatusService.getAggregateStatus(this.spaceId, this.environment, this.applicationId)
         .subscribe((status: Status): void => {
           if (status.type === StatusType.OK) {
@@ -185,7 +187,7 @@ export class DeploymentDetailsComponent {
         })
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.cpuChart.switchMap((chart: ChartAPI): Observable<[ChartAPI, Status]> => {
         if (chart === DeploymentDetailsComponent.NO_CHART) {
           return Observable.empty();
@@ -214,7 +216,7 @@ export class DeploymentDetailsComponent {
         })
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.memChart.switchMap((chart: ChartAPI): Observable<[ChartAPI, Status]> => {
         if (chart === DeploymentDetailsComponent.NO_CHART) {
           return Observable.empty();
@@ -249,7 +251,7 @@ export class DeploymentDetailsComponent {
     this.memStat =
       this.deploymentsService.getDeploymentMemoryStat(this.spaceId, this.environment, this.applicationId);
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.cpuChart.switchMap((chart: ChartAPI): Observable<[ChartAPI, CpuStat[]]> => {
         if (chart === DeploymentDetailsComponent.NO_CHART) {
           return Observable.empty();
@@ -270,7 +272,7 @@ export class DeploymentDetailsComponent {
         })
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.memChart.switchMap((chart: ChartAPI): Observable<[ChartAPI, MemoryStat[]]> => {
         if (chart === DeploymentDetailsComponent.NO_CHART) {
           return Observable.empty();
@@ -292,7 +294,7 @@ export class DeploymentDetailsComponent {
         })
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.memChart.switchMap((chart: ChartAPI): Observable<[ChartAPI, NetworkStat[]]> => {
         if (chart === DeploymentDetailsComponent.NO_CHART) {
           return Observable.empty();
@@ -319,7 +321,7 @@ export class DeploymentDetailsComponent {
   }
 
   ngOnDestroy(): void {
-    this.subscriptions.forEach((sub: Subscription): void => sub.unsubscribe());
+    super.ngOnDestroy();
 
     Observable.combineLatest(
       this.cpuChart,

@@ -2,7 +2,6 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnDestroy,
   OnInit,
   Output,
   ViewChild
@@ -13,6 +12,7 @@ import { NotificationType } from 'ngx-base';
 import { Observable, Subscription } from 'rxjs';
 
 import { NotificationsService } from 'app/shared/notifications.service';
+import { AbstractDeploymentsComponent } from '../abstract-deployments.component';
 import {
   DeploymentStatusService,
   Status,
@@ -33,7 +33,7 @@ enum CardStatusClass {
   templateUrl: 'deployment-card.component.html',
   styleUrls: ['./deployment-card.component.less']
 })
-export class DeploymentCardComponent implements OnDestroy, OnInit {
+export class DeploymentCardComponent extends AbstractDeploymentsComponent implements OnInit {
 
   public static readonly OK_TOOLTIP: string = 'Everything is ok';
   private static readonly DEBOUNCE_TIME: number = 5000; // 5 seconds
@@ -60,15 +60,15 @@ export class DeploymentCardComponent implements OnDestroy, OnInit {
 
   private _collapsed: boolean;
 
-  private readonly subscriptions: Array<Subscription> = [];
-
   private readonly debouncedUpdateDetails = debounce(this.updateDetails, DeploymentCardComponent.DEBOUNCE_TIME, { maxWait: DeploymentCardComponent.MAX_DEBOUNCE_TIME });
 
   constructor(
     private deploymentsService: DeploymentsService,
     private statusService: DeploymentStatusService,
     private notifications: NotificationsService
-  ) { }
+  ) {
+    super();
+  }
 
   @Input() set collapsed(collapsed: boolean) {
     this._collapsed = collapsed;
@@ -82,20 +82,16 @@ export class DeploymentCardComponent implements OnDestroy, OnInit {
     return this._collapsed;
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
-  }
-
   ngOnInit(): void {
     this.iconClass = DeploymentStatusIconComponent.CLASSES.ICON_OK;
     this.toolTip = DeploymentCardComponent.OK_TOOLTIP;
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.statusService.getAggregateStatus(this.spaceId, this.environment, this.applicationId)
         .subscribe((status: Status): void => this.changeStatus(status))
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.deploymentsService
         .isApplicationDeployedInEnvironment(this.spaceId, this.environment, this.applicationId)
         .subscribe((active: boolean) => {
@@ -164,7 +160,7 @@ export class DeploymentCardComponent implements OnDestroy, OnInit {
   }
 
   delete(): void {
-    this.subscriptions.push(
+    this.addSubscription(
       this.deploymentsService.deleteDeployment(
         this.spaceId,
         this.environment,

@@ -1,7 +1,6 @@
 import {
   Component,
   Input,
-  OnDestroy,
   OnInit,
   ViewEncapsulation
 } from '@angular/core';
@@ -20,13 +19,15 @@ import { Pods } from '../models/pods';
 import { Stat } from '../models/stat';
 import { DeploymentsService } from '../services/deployments.service';
 
+import { AbstractDeploymentsComponent } from '../abstract-deployments.component';
+
 @Component({
   encapsulation: ViewEncapsulation.None,
   selector: 'deployments-donut',
   templateUrl: './deployments-donut.component.html',
   styleUrls: ['./deployments-donut.component.less']
 })
-export class DeploymentsDonutComponent implements OnInit {
+export class DeploymentsDonutComponent extends AbstractDeploymentsComponent implements OnInit {
 
   @Input() mini: boolean;
   @Input() spaceId: string;
@@ -38,8 +39,6 @@ export class DeploymentsDonutComponent implements OnInit {
   pods: Observable<Pods>;
   desiredReplicas: number = 1;
   debounceScale = debounce(this.scale, 650);
-
-  private subscriptions: Subscription[] = [];
 
   colors: { [s in PodPhase]: string} = {
     'Empty': '#fafafa', // pf-black-100
@@ -60,12 +59,14 @@ export class DeploymentsDonutComponent implements OnInit {
   constructor(
     private deploymentsService: DeploymentsService,
     private notifications: NotificationsService
-  ) { }
+  ) {
+    super();
+  }
 
   ngOnInit(): void {
     this.pods = this.deploymentsService.getPods(this.spaceId, this.environment,  this.applicationId);
 
-    this.subscriptions.push(
+    this.addSubscription(
       this.pods.subscribe(pods => {
         this.replicas = pods.total;
         if (!this.scaleRequestPending) {
@@ -74,7 +75,7 @@ export class DeploymentsDonutComponent implements OnInit {
       })
     );
 
-    this.subscriptions.push(
+    this.addSubscription(
       Observable.combineLatest(
         this.deploymentsService.getEnvironmentCpuStat(this.spaceId, this.environment),
         this.deploymentsService.getEnvironmentMemoryStat(this.spaceId, this.environment)
@@ -82,10 +83,6 @@ export class DeploymentsDonutComponent implements OnInit {
         this.atQuota = stats.some((stat: Stat): boolean => stat.used >= stat.quota);
       })
     );
-  }
-
-  ngOnDestroy(): void {
-    this.subscriptions.forEach((subscription: Subscription): void => subscription.unsubscribe());
   }
 
   scaleUp(): void {
@@ -109,7 +106,7 @@ export class DeploymentsDonutComponent implements OnInit {
   }
 
   private scale(): void {
-    this.subscriptions.push(
+    this.addSubscription(
       this.deploymentsService.scalePods(
         this.spaceId, this.environment, this.applicationId, this.desiredReplicas
       ).first().subscribe(

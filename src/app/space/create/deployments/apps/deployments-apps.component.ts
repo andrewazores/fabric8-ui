@@ -2,7 +2,6 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnDestroy,
   OnInit,
   Output
 } from '@angular/core';
@@ -16,6 +15,7 @@ import {
   Subscription
 } from 'rxjs';
 
+import { AbstractDeploymentsComponent } from '../abstract-deployments.component';
 import { DeploymentsToolbarComponent } from '../deployments-toolbar/deployments-toolbar.component';
 
 @Component({
@@ -23,7 +23,7 @@ import { DeploymentsToolbarComponent } from '../deployments-toolbar/deployments-
   templateUrl: 'deployments-apps.component.html',
   styleUrls: ['./deployments-apps.component.less']
 })
-export class DeploymentsAppsComponent implements OnInit, OnDestroy {
+export class DeploymentsAppsComponent extends AbstractDeploymentsComponent implements OnInit {
 
   @Input() applications: Observable<string[]>;
   @Input() environments: Observable<string[]>;
@@ -39,22 +39,19 @@ export class DeploymentsAppsComponent implements OnInit, OnDestroy {
   private currentFilters: Filter[];
   private currentSortField: SortField;
   private isAscendingSort: boolean = true;
-  private subscriptions: Subscription[] = [];
 
-  constructor(private broadcaster: Broadcaster) {}
+  constructor(private broadcaster: Broadcaster) {
+    super();
+  }
 
   ngOnInit(): void {
     this.hasLoaded = Observable.forkJoin(this.applications.first(), this.environments.first()).map(() => true);
-    this.subscriptions.push(
+    this.addSubscription(
       this.applications.subscribe((applications: string[]) => {
         this.applicationsList = applications;
         this.applyFilters();
       })
     );
-  }
-
-  ngOnDestroy(): void {
-    this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
   }
 
   filterChange(event: FilterEvent): void {
