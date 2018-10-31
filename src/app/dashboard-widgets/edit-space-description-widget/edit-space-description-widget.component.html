@@ -72,8 +72,7 @@
 
 <ng-template #popoverContent>
   <div class="popover-list-wrapper no-vertical-scroll">
-    <!-- Re-enable when collaborator query can include sorting parameter -->
-    <!-- <form role="form" class="search-pf has-button margin-bottom-10">
+    <form role="form" class="search-pf has-button margin-bottom-10">
       <div class="form-group">
         <div class="search-pf-input-group">
           <label for="search1" class="sr-only">Search collaborators</label>
@@ -83,7 +82,7 @@
       <div class="form-group">
         <button class="btn btn-default" type="button"><span class="fa fa-search"></span></button>
       </div>
-    </form> -->
+    </form>
     <div almInfiniteScroll class="collaborator-list-scroll" (initItems)="popoverInit($event.pageSize)" (fetchMore)="fetchMoreCollaborators()">
       <div class="collaborator-item" *ngFor="let item of filteredCollaborators">
         <span class="collaborator-avatar">

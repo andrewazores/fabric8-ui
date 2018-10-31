@@ -134,16 +134,7 @@ export class EditSpaceDescriptionWidgetComponent implements OnInit, OnDestroy {
   }
 
   onCollaboratorSearchChange(searchTerm: string): void {
-    if (searchTerm === '') {
-      this.filteredCollaborators = this.collaborators;
-      return;
-    }
-    this.filteredCollaborators = this.collaborators
-      .filter(
-        (user: User): boolean =>
-          user.attributes.fullName.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())
-          || user.attributes.username.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())
-        );
+    // TODO: delegate to CollaboratorService
   }
 
   popoverInit(pageSize: number): void {
